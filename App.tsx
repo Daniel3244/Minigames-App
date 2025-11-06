@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Platform, View, StyleSheet } from 'react-native';
 
 import HomeScreen from './screens/HomeScreen';
 import MemoryGameScreen from './screens/MemoryGameScreen';
@@ -25,7 +26,7 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-  return (
+  const content = (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Home" component={HomeScreen} />
@@ -39,4 +40,35 @@ export default function App() {
       </Stack.Navigator>
     </NavigationContainer>
   );
+
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.webContainer}>
+        <View style={styles.webFrame}>{content}</View>
+      </View>
+    );
+  }
+
+  return content;
 }
+
+const styles = StyleSheet.create({
+  webContainer: {
+    width: '100vw',
+    height: '100vh',
+    backgroundColor: '#121212',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    boxSizing: 'border-box',
+  },
+  webFrame: {
+    width: 390,
+    height: 844,
+    borderRadius: 36,
+    overflow: 'hidden',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+    backgroundColor: '#000',
+  },
+});

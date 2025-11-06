@@ -1,114 +1,193 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import axios from 'axios';
 import he from 'he';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const updateQuizHighScore = async (score: number) => {
-  const prev = parseInt((await AsyncStorage.getItem('quizHighScore')) || '0');
-  if (score > prev) {
-    await AsyncStorage.setItem('quizHighScore', score.toString());
-  }
-};
+import { RootStackParamList } from '../App';
+import showAlert from '../utils/showAlert';
+import { strings } from '../constants/strings';
+import { colors } from '../styles/theme';
+import { layout } from '../styles/commonStyles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QuizGame'>;
 
-interface Question {
+type Question = {
   question: string;
   correct_answer: string;
   incorrect_answers: string[];
-}
+};
+
+const updateQuizHighScore = async (score: number) => {
+  const prev = parseInt((await AsyncStorage.getItem('quizHighScore')) || '0', 10);
+  if (score > prev) {
+    await AsyncStorage.setItem('quizHighScore', String(score));
+  }
+};
 
 export default function QuizGameScreen({ navigation }: Props) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
 
-  const fetchQuestions = () => {
+  const loadHighScore = async () => {
+    const stored = parseInt((await AsyncStorage.getItem('quizHighScore')) || '0', 10);
+    setHighScore(stored);
+  };
+
+  const fetchQuestions = async () => {
     setLoading(true);
-    axios.get('https://opentdb.com/api.php?amount=5&type=multiple').then(res => {
-      setQuestions(res.data.results);
+    setError(null);
+
+    try {
+      const response = await axios.get('https://opentdb.com/api.php?amount=5&type=multiple');
+      setQuestions(response.data.results);
       setCurrentQuestionIndex(0);
       setScore(0);
       setSelectedAnswer(null);
+    } catch (err) {
+      setError(strings.quiz.error);
+    } finally {
       setLoading(false);
-    });
+    }
   };
 
   useEffect(() => {
-    fetchQuestions();
+    void loadHighScore();
+    void fetchQuestions();
   }, []);
 
-  if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" />;
-
   const currentQuestion = questions[currentQuestionIndex];
-  const answers = [...currentQuestion.incorrect_answers, currentQuestion.correct_answer].sort();
+
+  const shuffledAnswers = useMemo(() => {
+    if (!currentQuestion) {
+      return [];
+    }
+    return [...currentQuestion.incorrect_answers, currentQuestion.correct_answer].sort(
+      () => Math.random() - 0.5,
+    );
+  }, [currentQuestion]);
+
+  useEffect(() => {
+    if (score > highScore) {
+      setHighScore(score);
+    }
+  }, [score, highScore]);
+
+  if (loading) {
+    return <ActivityIndicator style={styles.loader} size="large" />;
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.error}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchQuestions}>
+          <Text style={styles.retryText}>{strings.quiz.retry}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (!currentQuestion) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.error}>{strings.quiz.error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchQuestions}>
+          <Text style={styles.retryText}>{strings.quiz.retry}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const nextQuestion = (latestScore: number) => {
+    if (currentQuestionIndex + 1 < questions.length) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setSelectedAnswer(null);
+    } else {
+      void updateQuizHighScore(latestScore);
+      showAlert(strings.quiz.finishTitle, strings.quiz.finishMessage(latestScore, questions.length), [
+        { text: strings.common.menu, onPress: () => navigation.navigate('Home') },
+        { text: strings.common.playAgain, onPress: fetchQuestions },
+      ]);
+    }
+  };
 
   const checkAnswer = (answer: string) => {
-    if (selectedAnswer) return;
+    if (selectedAnswer) {
+      return;
+    }
+
     setSelectedAnswer(answer);
     const isCorrect = answer === currentQuestion.correct_answer;
-    if (isCorrect) setScore(score + 1);
+    const updatedScore = score + (isCorrect ? 1 : 0);
+    setScore(updatedScore);
 
     setTimeout(() => {
-      if (currentQuestionIndex + 1 < questions.length) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-        setSelectedAnswer(null);
-      } else {
-        const finalScore = score + (isCorrect ? 1 : 0);
-        if (finalScore > highScore) setHighScore(finalScore);
-        updateQuizHighScore(finalScore);
-        Alert.alert('🏆 Koniec gry!', `Twój wynik: ${finalScore} / ${questions.length}`, [
-          { text: '🏠 Menu', onPress: () => navigation.navigate('Home') },
-          { text: '🔄 Zagraj jeszcze raz', onPress: fetchQuestions },
-        ]);
-      }
-    }, 1200);
+      nextQuestion(updatedScore);
+    }, 1000);
   };
 
   const getAnswerColor = (answer: string) => {
-    if (!selectedAnswer) return '#4c8bf5';
-    if (answer === currentQuestion.correct_answer) return '#4CAF50';
-    if (answer === selectedAnswer && answer !== currentQuestion.correct_answer) return '#f44336';
-    return '#ddd';
+    if (!selectedAnswer) {
+      return colors.quizPrimary;
+    }
+    if (answer === currentQuestion.correct_answer) {
+      return colors.quizCorrect;
+    }
+    if (answer === selectedAnswer) {
+      return colors.quizIncorrect;
+    }
+    return colors.quizNeutral;
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.scorecard}>
-        <Text style={styles.score}>🔥 Score: {score}</Text>
-        <Text style={styles.highScore}>🏅 Highest Score: {highScore}</Text>
+        <Text style={styles.score}>{strings.quiz.score(score)}</Text>
+        <Text style={styles.highScore}>{strings.quiz.highScore(highScore)}</Text>
       </View>
       <Text style={styles.question}>{he.decode(currentQuestion.question)}</Text>
-      {answers.map((answer, index) => (
+      {shuffledAnswers.map(answer => (
         <TouchableOpacity
           style={[styles.button, { backgroundColor: getAnswerColor(answer) }]}
-          key={index}
+          key={answer}
           onPress={() => checkAnswer(answer)}
         >
           <Text style={styles.answer}>{he.decode(answer)}</Text>
         </TouchableOpacity>
       ))}
       <TouchableOpacity style={styles.homeButton} onPress={() => navigation.navigate('Home')}>
-        <Text style={styles.homeButtonText}>🔙 Back to Menu</Text>
+        <Text style={styles.homeButtonText}>{strings.common.backToMenu}</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center', alignItems: 'center' },
+  container: { ...layout.centered, padding: 20 },
+  loader: { ...layout.centered },
+  centered: { ...layout.centered, padding: 20 },
   question: { fontSize: 20, marginBottom: 20, textAlign: 'center' },
   button: { padding: 15, width: '100%', marginVertical: 5, borderRadius: 10 },
-  answer: { fontSize: 16, color: 'white', textAlign: 'center' },
+  answer: { fontSize: 16, color: colors.textLight, textAlign: 'center' },
   homeButton: { position: 'absolute', bottom: 30, padding: 12 },
-  homeButtonText: { color: '#333', fontSize: 16 },
-  scorecard: { position: 'absolute', top: 40, width: '100%', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20 },
+  homeButtonText: { color: colors.textDark, fontSize: 16 },
+  scorecard: {
+    position: 'absolute',
+    top: 40,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+  },
   score: { fontSize: 18, fontWeight: 'bold' },
   highScore: { fontSize: 18, fontWeight: 'bold' },
+  error: { fontSize: 16, color: colors.quizIncorrect, marginBottom: 16, textAlign: 'center' },
+  retryButton: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.quizPrimary, borderRadius: 8 },
+  retryText: { color: colors.textLight, fontWeight: '600' },
 });
