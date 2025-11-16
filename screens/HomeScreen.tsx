@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import { Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, Platform, TextStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -40,6 +40,20 @@ const menuItems: MenuItem[] = [
   },
 ];
 
+const titleShadowStyle: TextStyle =
+  Platform.select<TextStyle>({
+    web: { textShadow: '2px 2px 4px rgba(0, 0, 0, 0.55)' } as TextStyle,
+    default: {
+      textShadowColor: '#000',
+      textShadowOffset: { width: 2, height: 2 },
+      textShadowRadius: 4,
+    },
+  }) || {
+    textShadowColor: '#000',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+  };
+
 export default function HomeScreen({ navigation }: Props) {
   return (
     <LinearGradient colors={colors.gradient} style={styles.gradient}>
@@ -75,9 +89,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
     marginTop: 10,
-    textShadowColor: '#000',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
+    ...titleShadowStyle,
   },
   buttonsContainer: { paddingHorizontal: 20, paddingBottom: 30 },
   buttonsContent: {

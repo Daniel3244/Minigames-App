@@ -60,8 +60,24 @@ type Strings = {
     title: string;
     youAre: (symbol: string) => string;
     currentTurn: (symbol: string) => string;
+    currentRoom: (code: string) => string;
+    lobbyTitle: string;
+    createRoom: string;
+    joinRoom: string;
+    roomCodeLabel: string;
+    roomCodePlaceholder: string;
+    roomListTitle: string;
+    roomListEmpty: string;
+    roomStatusWaiting: string;
+    roomStatusPlaying: string;
     roomFullTitle: string;
     roomFullMessage: string;
+    joinFailedTitle: string;
+    joinFailedMessage: string;
+    roomNotFoundTitle: string;
+    roomNotFoundMessage: string;
+    roomCodeTakenMessage: string;
+    roomLimitReached: (limit: number) => string;
     opponentLeftTitle: string;
     opponentLeftMessage: string;
     gameFinishedTitle: string;
@@ -69,6 +85,12 @@ type Strings = {
     drawTitle: string;
     drawMessage: string;
     assigningPlayer: string;
+    waitingForOpponent: string;
+    rematchVotesLabel: (count: number, total: number) => string;
+    rematchRequest: string;
+    rematchPending: string;
+    rematchReady: string;
+    leaveRoom: string;
   };
   scoreboard: {
     title: string;
@@ -149,8 +171,24 @@ const base: Strings = {
     title: 'Tic Tac Toe Multiplayer',
     youAre: symbol => `You are: ${symbol}`,
     currentTurn: symbol => `Current turn: ${symbol}`,
+    currentRoom: code => `Room code: ${code}`,
+    lobbyTitle: 'Online Lobby',
+    createRoom: 'Create new room',
+    joinRoom: 'Join room',
+    roomCodeLabel: 'Room code',
+    roomCodePlaceholder: 'Enter code (e.g. ABCD1)',
+    roomListTitle: 'Active rooms',
+    roomListEmpty: 'No rooms available right now. Create one!',
+    roomStatusWaiting: 'Waiting for players',
+    roomStatusPlaying: 'In progress',
     roomFullTitle: 'Room full',
     roomFullMessage: 'Two players are already connected.',
+    joinFailedTitle: 'Joining failed',
+    joinFailedMessage: 'Something interfered while joining the lobby. Please try again in a moment.',
+    roomNotFoundTitle: 'Room not found',
+    roomNotFoundMessage: 'We could not find a room with that code.',
+    roomCodeTakenMessage: 'That code is already in use. Try another value.',
+    roomLimitReached: limit => `Room limit reached. Please wait for another lobby to close (max ${limit}).`,
     opponentLeftTitle: 'Opponent disconnected',
     opponentLeftMessage: 'The other player left the game.',
     gameFinishedTitle: 'Game finished',
@@ -158,6 +196,12 @@ const base: Strings = {
     drawTitle: 'Draw',
     drawMessage: 'No more moves left.',
     assigningPlayer: 'Assigning player...',
+    waitingForOpponent: 'Waiting for another player...',
+    rematchVotesLabel: (count, total) => `Rematch votes: ${count}/${total}`,
+    rematchRequest: 'Request rematch',
+    rematchPending: 'Waiting for your opponent...',
+    rematchReady: 'Rematch ready! Board will reset shortly...',
+    leaveRoom: 'Leave room',
   },
   scoreboard: {
     title: 'Your Results',

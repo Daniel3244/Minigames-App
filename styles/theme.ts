@@ -1,4 +1,4 @@
-import { ViewStyle } from 'react-native';
+import { Platform, ViewStyle } from 'react-native';
 
 export const colors = {
   gradient: ['#89f7fe', '#66a6ff'] as const,
@@ -15,10 +15,20 @@ export const colors = {
   cardBackground: 'rgba(255,255,255,0.32)',
 };
 
-export const shadow: ViewStyle = {
+const nativeShadow: ViewStyle = {
   shadowColor: '#000',
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.2,
   shadowRadius: 4,
   elevation: 3,
 };
+
+const webShadow: ViewStyle = {
+  boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.15)',
+};
+
+export const shadow: ViewStyle =
+  Platform.select<ViewStyle>({
+    web: webShadow,
+    default: nativeShadow,
+  }) || nativeShadow;

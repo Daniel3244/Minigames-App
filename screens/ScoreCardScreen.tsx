@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Platform, TextStyle, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -110,6 +110,20 @@ export default function ScoreCardScreen({ navigation }: Props) {
   );
 }
 
+const titleShadowStyle: TextStyle =
+  Platform.select<TextStyle>({
+    web: { textShadow: '1px 1px 3px rgba(0, 0, 0, 0.6)' } as TextStyle,
+    default: {
+      textShadowColor: '#000',
+      textShadowOffset: { width: 1, height: 1 },
+      textShadowRadius: 3,
+    },
+  }) || {
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  };
+
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   centeredContainer: {
@@ -121,9 +135,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.textLight,
     marginBottom: 30,
-    textShadowColor: '#000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    ...titleShadowStyle,
   },
   scoreItem: {
     ...surfaces.roundedCard,
