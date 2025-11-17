@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 import { RootStackParamList } from '../App';
 import showAlert from '../utils/showAlert';
 import { strings } from '../constants/strings';
 import { colors } from '../styles/theme';
-import { layout } from '../styles/commonStyles';
+import { surfaces } from '../styles/commonStyles';
 import {
   Board,
   PlayerSymbol,
@@ -132,33 +133,86 @@ export default function TicTacToeScreen({ navigation }: Props) {
   }, [playerTurn, gameOver, computerSmartMove]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{strings.ttt.title}</Text>
-      <View style={styles.board}>
-        {board.map((cell, idx) => (
-          <TouchableOpacity key={idx} style={styles.cell} onPress={() => handleTap(idx)} disabled={Boolean(cell) || gameOver}>
-            <Text style={styles.symbol}>{cell}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <TouchableOpacity style={styles.resetButton} onPress={resetGame}>
-        <Text style={styles.resetButtonText}>{strings.common.reset}</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.homeButton} onPress={() => navigation.navigate('Home')}>
-        <Text style={styles.homeButtonText}>{strings.common.backToMenu}</Text>
-      </TouchableOpacity>
-    </View>
+    <LinearGradient colors={colors.gradient} style={styles.gradient}>
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.panel}>
+          <Text style={styles.title}>{strings.ttt.title}</Text>
+          <Text style={styles.subtitle}>
+            Play as X. The assistant mixes smart and random moves for variety.
+          </Text>
+          <View style={styles.board}>
+            {board.map((cell, idx) => (
+              <TouchableOpacity
+                key={idx}
+                style={styles.cell}
+                onPress={() => handleTap(idx)}
+                disabled={Boolean(cell) || gameOver}
+              >
+                <Text style={styles.symbol}>{cell}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View style={styles.actions}>
+            <TouchableOpacity style={styles.resetButton} onPress={resetGame}>
+              <Text style={styles.resetButtonText}>{strings.common.reset}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.homeButton} onPress={() => navigation.navigate('Home')}>
+              <Text style={styles.homeButtonText}>{strings.common.backToMenu}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { ...layout.centered },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-  board: { flexDirection: 'row', flexWrap: 'wrap', width: 300, height: 300 },
-  cell: { width: '33%', height: '33%', borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  symbol: { fontSize: 40 },
-  resetButton: { marginTop: 20, padding: 10, backgroundColor: colors.quizPrimary, borderRadius: 8 },
-  resetButtonText: { color: colors.textLight, fontSize: 16 },
-  homeButton: { marginTop: 10 },
-  homeButtonText: { color: colors.textDark, fontSize: 16 },
+  gradient: { flex: 1 },
+  safe: { flex: 1, padding: 20 },
+  panel: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 28,
+    padding: 24,
+    alignItems: 'center',
+    ...surfaces.roundedCard,
+    borderWidth: 0,
+  },
+  title: { fontSize: 28, fontWeight: '800', color: colors.textLight },
+  subtitle: { color: colors.textMuted, textAlign: 'center', marginVertical: 12 },
+  board: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: 300,
+    height: 300,
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginTop: 10,
+    marginBottom: 20,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  cell: {
+    width: '33.33%',
+    height: '33.33%',
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  symbol: { fontSize: 40, color: colors.textLight },
+  actions: { width: '100%', gap: 12 },
+  resetButton: {
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: colors.quizPrimary,
+    alignItems: 'center',
+  },
+  resetButtonText: { color: colors.textLight, fontSize: 16, fontWeight: '600' },
+  homeButton: {
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+  },
+  homeButtonText: { color: colors.textLight, fontSize: 16 },
 });

@@ -1,7 +1,9 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Platform, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useFonts } from 'expo-font';
+import { colors } from './styles/theme';
 
 import HomeScreen from './screens/HomeScreen';
 import MemoryGameScreen from './screens/MemoryGameScreen';
@@ -26,6 +28,23 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
+  const { width } = useWindowDimensions();
+  const [fontsLoaded] = useFonts({
+    'FontAwesome5Free-Solid': require('./assets/fonts/FontAwesome5_Solid.ttf'),
+    'FontAwesome5Free-Regular': require('./assets/fonts/FontAwesome5_Regular.ttf'),
+    'FontAwesome5Free-Light': require('./assets/fonts/FontAwesome5_Regular.ttf'),
+    'FontAwesome5Free-Brand': require('./assets/fonts/FontAwesome5_Brands.ttf'),
+    FontAwesome: require('./assets/fonts/FontAwesome.ttf'),
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#ffffff" />
+      </View>
+    );
+  }
+
   const content = (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -41,10 +60,12 @@ export default function App() {
     </NavigationContainer>
   );
 
-  if (Platform.OS === 'web') {
+  const shouldFrameWeb = Platform.OS === 'web' && width > 980;
+
+  if (shouldFrameWeb) {
     return (
       <View style={styles.webContainer}>
-        <View style={styles.webFrame}>{content}</View>
+        <View style={styles.webFrameInner}>{content}</View>
       </View>
     );
   }
@@ -56,19 +77,29 @@ const styles = StyleSheet.create({
   webContainer: {
     width: '100vw',
     height: '100vh',
-    backgroundColor: '#121212',
+    backgroundColor: colors.background,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    paddingLeft: 40,
+    paddingRight: 40,
+    paddingTop: 24,
+    paddingBottom: 24,
     boxSizing: 'border-box',
   },
-  webFrame: {
-    width: 390,
-    height: 844,
-    borderRadius: 36,
+  webFrameInner: {
+    width: 400,
+    height: 870,
+    borderRadius: 32,
     overflow: 'hidden',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
-    backgroundColor: '#000',
+    boxShadow: '0 30px 80px rgba(5,8,20,0.75)',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#121212',
   },
 });

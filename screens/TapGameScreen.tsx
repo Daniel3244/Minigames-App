@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 import { RootStackParamList } from '../App';
 import showAlert from '../utils/showAlert';
 import { strings } from '../constants/strings';
 import { colors } from '../styles/theme';
-import { layout } from '../styles/commonStyles';
+import { surfaces } from '../styles/commonStyles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TapGame'>;
 
@@ -49,31 +50,44 @@ export default function TapGameScreen({ navigation }: Props) {
     }, [resetGame]),
   );
 
+  const endGame = useCallback(
+    (finalScore: number) => {
+      clearTimer();
+      setGameStarted(false);
+      void updateTapHighScore(finalScore);
+      setHighScore(prev => Math.max(prev, finalScore));
+      showAlert(strings.tap.timeUpTitle, strings.tap.timeUpMessage(finalScore), [
+        { text: strings.common.menu, onPress: () => navigation.navigate('Home') },
+        { text: strings.common.tryAgain, onPress: resetGame },
+      ]);
+    },
+    [clearTimer, navigation, resetGame],
+  );
+
   useEffect(() => {
     if (!gameStarted) {
       clearTimer();
       return;
     }
 
-    if (timeLeft === 0) {
-      clearTimer();
-      const nextHighScore = Math.max(highScore, count);
-      setHighScore(nextHighScore);
-      void updateTapHighScore(count);
-      showAlert(strings.tap.timeUpTitle, strings.tap.timeUpMessage(count), [
-        { text: strings.common.menu, onPress: () => navigation.navigate('Home') },
-        { text: strings.common.tryAgain, onPress: resetGame },
-      ]);
-      setGameStarted(false);
-      return;
-    }
-
     timerRef.current = setInterval(() => {
-      setTimeLeft(prev => prev - 1);
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return clearTimer;
-  }, [gameStarted, timeLeft, count, highScore, navigation, clearTimer, resetGame]);
+  }, [gameStarted, clearTimer]);
+
+  useEffect(() => {
+    if (!gameStarted || timeLeft > 0) {
+      return;
+    }
+    endGame(count);
+  }, [gameStarted, timeLeft, count, endGame]);
 
   const startGame = useCallback(() => {
     clearTimer();
@@ -89,32 +103,76 @@ export default function TapGameScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.timer}>{strings.tap.time(timeLeft)}</Text>
-      <Text style={styles.score}>{strings.tap.taps(count)}</Text>
-      <Text style={styles.highScore}>{strings.tap.best(highScore)}</Text>
-
-      <TouchableOpacity
-        style={[styles.tapButton, { backgroundColor: gameStarted ? colors.tapActive : colors.tapIdle }]}
-        onPress={gameStarted ? handleTap : startGame}
-      >
-        <Text style={styles.tapText}>{gameStarted ? strings.tap.tap : strings.tap.start}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.homeButton} onPress={() => navigation.navigate('Home')}>
-        <Text style={styles.homeButtonText}>{strings.common.backToMenu}</Text>
-      </TouchableOpacity>
-    </View>
+    <LinearGradient colors={colors.gradient} style={styles.gradient}>
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.panel}>
+          <Text style={styles.title}>Tap Challenge</Text>
+          <Text style={styles.subtitle}>Beat your previous streak in {gameDuration} seconds.</Text>
+          <View style={styles.metrics}>
+            <View style={styles.metricPill}>
+              <Text style={styles.metricLabel}>Timer</Text>
+              <Text style={styles.metricValue}>{timeLeft}s</Text>
+            </View>
+            <View style={styles.metricPill}>
+              <Text style={styles.metricLabel}>Score</Text>
+              <Text style={styles.metricValue}>{count}</Text>
+            </View>
+            <View style={styles.metricPill}>
+              <Text style={styles.metricLabel}>Best</Text>
+              <Text style={styles.metricValue}>{highScore}</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.tapButton,
+              { backgroundColor: gameStarted ? colors.tapActive : colors.tapIdle },
+            ]}
+            onPress={gameStarted ? handleTap : startGame}
+          >
+            <Text style={styles.tapText}>{gameStarted ? strings.tap.tap : strings.tap.start}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.homeButton} onPress={() => navigation.navigate('Home')}>
+            <Text style={styles.homeButtonText}>{strings.common.backToMenu}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { ...layout.centered, padding: 20 },
-  timer: { fontSize: 22, marginBottom: 10, fontWeight: 'bold' },
-  score: { fontSize: 20, marginBottom: 5 },
-  highScore: { fontSize: 18, marginBottom: 20, color: '#555' },
-  tapButton: { width: '80%', padding: 30, borderRadius: 15, alignItems: 'center' },
+  gradient: { flex: 1 },
+  safe: { flex: 1, padding: 20 },
+  panel: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 28,
+    padding: 24,
+    ...surfaces.roundedCard,
+    borderWidth: 0,
+    alignItems: 'center',
+  },
+  title: { fontSize: 28, fontWeight: '800', color: colors.textLight, marginBottom: 6 },
+  subtitle: { color: colors.textMuted, textAlign: 'center', marginBottom: 20 },
+  metrics: { flexDirection: 'row', gap: 12, marginBottom: 30 },
+  metricPill: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+  },
+  metricLabel: { color: colors.textMuted, fontSize: 12 },
+  metricValue: { color: colors.textLight, fontSize: 22, fontWeight: '700' },
+  tapButton: { width: '100%', padding: 32, borderRadius: 24, alignItems: 'center', marginBottom: 30 },
   tapText: { color: colors.textLight, fontSize: 24, fontWeight: 'bold' },
-  homeButton: { position: 'absolute', bottom: 30, padding: 12 },
-  homeButtonText: { color: colors.textDark, fontSize: 16 },
+  homeButton: {
+    marginTop: 'auto',
+    paddingVertical: 14,
+    borderRadius: 18,
+    backgroundColor: colors.textLight,
+    width: '100%',
+    alignItems: 'center',
+  },
+  homeButtonText: { color: colors.textDark, fontSize: 16, fontWeight: '600' },
 });

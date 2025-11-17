@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, SafeAreaView } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 import { RootStackParamList } from '../App';
 import showAlert from '../utils/showAlert';
 import { strings } from '../constants/strings';
 import { colors } from '../styles/theme';
-import { layout } from '../styles/commonStyles';
+import { surfaces } from '../styles/commonStyles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MemoryGame'>;
 
@@ -98,7 +99,7 @@ export default function MemoryGameScreen({ navigation }: Props) {
   const renderCard = ({ item, index }: { item: Card; index: number }) => (
     <TouchableOpacity style={styles.card} onPress={() => openCard(index)}>
       {item.opened || item.matched ? (
-        <FontAwesome name={item.icon as any} size={30} color={colors.textDark} />
+        <FontAwesome name={item.icon as any} size={30} color={colors.textLight} />
       ) : (
         <Text style={styles.hidden}>?</Text>
       )}
@@ -106,36 +107,71 @@ export default function MemoryGameScreen({ navigation }: Props) {
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.score}>{strings.memoryGame.scoreboard(score, icons.length)}</Text>
-      <FlatList
-        numColumns={4}
-        data={cards}
-        renderItem={renderCard}
-        keyExtractor={item => item.id.toString()}
-        style={styles.list}
-      />
-      <TouchableOpacity style={styles.homeButton} onPress={() => navigation.navigate('Home')}>
-        <Text style={styles.homeButtonText}>{strings.common.backToMenu}</Text>
-      </TouchableOpacity>
-    </View>
+    <LinearGradient colors={colors.gradient} style={styles.gradient}>
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.panel}>
+          <Text style={styles.title}>Memory Match</Text>
+          <Text style={styles.subtitle}>Flip two cards at a time and clear the grid faster.</Text>
+          <View style={styles.scorePill}>
+            <Text style={styles.scoreValue}>{strings.memoryGame.scoreboard(score, icons.length)}</Text>
+          </View>
+          <FlatList
+            numColumns={4}
+            data={cards}
+            renderItem={renderCard}
+            keyExtractor={item => item.id.toString()}
+            style={styles.list}
+            contentContainerStyle={styles.grid}
+          />
+          <TouchableOpacity style={styles.homeButton} onPress={() => navigation.navigate('Home')}>
+            <Text style={styles.homeButtonText}>{strings.common.backToMenu}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { ...layout.centered, paddingTop: 40 },
+  gradient: { flex: 1 },
+  safe: { flex: 1, padding: 20 },
+  panel: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 28,
+    padding: 20,
+    ...surfaces.roundedCard,
+    borderWidth: 0,
+  },
+  title: { fontSize: 28, fontWeight: '800', color: colors.textLight, marginBottom: 6 },
+  subtitle: { color: colors.textMuted, marginBottom: 16, lineHeight: 20 },
+  scorePill: {
+    alignSelf: 'flex-start',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginBottom: 10,
+  },
+  scoreValue: { color: colors.textLight, fontWeight: '600' },
+  grid: { alignItems: 'center' },
   card: {
-    width: 70,
-    height: 70,
+    width: 66,
+    height: 84,
     margin: 8,
-    borderRadius: 10,
-    backgroundColor: '#ddd',
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.12)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  hidden: { fontSize: 24, color: '#888' },
-  score: { fontSize: 20, fontWeight: 'bold', marginBottom: 15 },
-  homeButton: { marginTop: 20, padding: 12 },
-  homeButtonText: { color: colors.textDark, fontSize: 16 },
-  list: { flexGrow: 0 },
+  hidden: { fontSize: 24, color: colors.textMuted },
+  homeButton: {
+    marginTop: 20,
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+  },
+  homeButtonText: { color: colors.textLight, fontSize: 16, fontWeight: '600' },
+  list: { flexGrow: 0, alignSelf: 'center' },
 });

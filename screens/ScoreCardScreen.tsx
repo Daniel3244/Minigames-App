@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Platform, TextStyle, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Platform, TextStyle, View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,7 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '../App';
 import { strings } from '../constants/strings';
 import { colors } from '../styles/theme';
-import { layout, surfaces } from '../styles/commonStyles';
+import { surfaces } from '../styles/commonStyles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ScoreCard'>;
 
@@ -28,16 +28,16 @@ const initialScores: ScoreState = {
   tttWinsmp: 0,
 };
 
-type ScoreItemProps = { icon: React.ReactNode; label: string; value: string; color: string };
+type ScoreItemProps = { icon: React.ReactNode; label: string; value: string; gradient: string[] };
 
-const ScoreItem = ({ icon, label, value, color }: ScoreItemProps) => (
-  <View style={[styles.scoreItem, { backgroundColor: color }]}>
+const ScoreItem = ({ icon, label, value, gradient }: ScoreItemProps) => (
+  <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.scoreItem}>
     <View style={styles.iconWrap}>{icon}</View>
     <View style={styles.scoreTextWrap}>
       <Text style={styles.scoreLabel}>{label}</Text>
       <Text style={styles.scoreValue}>{value}</Text>
     </View>
-  </View>
+  </LinearGradient>
 );
 
 export default function ScoreCardScreen({ navigation }: Props) {
@@ -67,45 +67,47 @@ export default function ScoreCardScreen({ navigation }: Props) {
       icon: <FontAwesome5 name="brain" size={28} color={colors.textLight} />,
       label: strings.scoreboard.labels.memory,
       value: strings.scoreboard.values.memory(scores.memoryWins),
-      color: '#4c8bf5',
+      gradient: ['#4facfe', '#38f9d7'],
     },
     {
       icon: <FontAwesome5 name="question-circle" size={28} color={colors.textLight} />,
       label: strings.scoreboard.labels.quiz,
       value: strings.scoreboard.values.quiz(scores.quizHighScore),
-      color: '#f78c6b',
+      gradient: ['#f78ca0', '#f9748f'],
     },
     {
       icon: <FontAwesome5 name="bolt" size={28} color={colors.textLight} />,
       label: strings.scoreboard.labels.tap,
       value: strings.scoreboard.values.tap(scores.tapHighScore),
-      color: '#ffd166',
+      gradient: ['#fddb92', '#d1fdff'],
     },
     {
       icon: <FontAwesome5 name="times-circle" size={28} color={colors.textLight} />,
       label: strings.scoreboard.labels.ttt,
       value: strings.scoreboard.values.ttt(scores.tttWins),
-      color: '#06d6a0',
+      gradient: ['#84fab0', '#8fd3f4'],
     },
     {
       icon: <FontAwesome5 name="users" size={28} color={colors.textLight} />,
       label: strings.scoreboard.labels.tttMultiplayer,
       value: strings.scoreboard.values.tttMultiplayer(scores.tttWinsmp),
-      color: '#ef476f',
+      gradient: ['#f794a4', '#fdd6bd'],
     },
   ];
 
   return (
     <LinearGradient colors={colors.gradient} style={styles.gradient}>
-      <View style={styles.centeredContainer}>
-        <Text style={styles.title}>{strings.scoreboard.title}</Text>
+      <ScrollView contentContainerStyle={styles.centeredContainer} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Text style={styles.title}>{strings.scoreboard.title}</Text>
+        </View>
         {scoreItems.map(item => (
           <ScoreItem key={item.label} {...item} />
         ))}
         <TouchableOpacity style={styles.homeButton} onPress={() => navigation.navigate('Home')}>
           <Text style={styles.homeButtonText}>{strings.common.backToMenu}</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </LinearGradient>
   );
 }
@@ -127,23 +129,30 @@ const titleShadowStyle: TextStyle =
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   centeredContainer: {
-    ...layout.centered,
     paddingHorizontal: 20,
+    paddingTop: 32,
+    paddingBottom: 40,
+    gap: 16,
+  },
+  header: {
+    marginBottom: 12,
+    alignItems: 'center',
+    gap: 8,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
     color: colors.textLight,
-    marginBottom: 30,
+    textAlign: 'center',
     ...titleShadowStyle,
   },
   scoreItem: {
     ...surfaces.roundedCard,
-    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    marginVertical: 8,
+    borderWidth: 0,
+    minHeight: 92,
   },
   iconWrap: {
     width: 40,
@@ -163,13 +172,16 @@ const styles = StyleSheet.create({
     color: colors.textLight,
   },
   homeButton: {
-    marginTop: 40,
-    padding: 12,
-    backgroundColor: colors.textLight,
-    borderRadius: 10,
+    marginTop: 12,
+    paddingVertical: 14,
+    borderRadius: 18,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   homeButtonText: {
-    color: colors.textDark,
+    color: colors.textLight,
     fontSize: 16,
     fontWeight: 'bold',
   },

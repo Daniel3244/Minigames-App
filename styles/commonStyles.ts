@@ -1,5 +1,5 @@
 import { ViewStyle } from 'react-native';
-import { shadow } from './theme';
+import { colors, shadow } from './theme';
 
 export const layout = {
   centered: {
@@ -15,6 +15,8 @@ export const layout = {
 export const surfaces = {
   roundedCard: {
     borderRadius: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
     ...shadow,
   } as ViewStyle,
 };

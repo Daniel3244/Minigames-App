@@ -1,14 +1,22 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+  SafeAreaView,
+} from 'react-native';
 import axios from 'axios';
 import he from 'he';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 import { RootStackParamList } from '../App';
 import showAlert from '../utils/showAlert';
 import { strings } from '../constants/strings';
 import { colors } from '../styles/theme';
-import { layout } from '../styles/commonStyles';
+import { surfaces } from '../styles/commonStyles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QuizGame'>;
 
@@ -78,30 +86,25 @@ export default function QuizGameScreen({ navigation }: Props) {
     }
   }, [score, highScore]);
 
+  const renderFallback = (message: string) => (
+    <LinearGradient colors={colors.gradient} style={styles.gradient}>
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.panel}>
+          <Text style={styles.error}>{message}</Text>
+          <TouchableOpacity style={styles.primaryButton} onPress={fetchQuestions}>
+            <Text style={styles.primaryText}>{strings.quiz.retry}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
+  );
+
   if (loading) {
-    return <ActivityIndicator style={styles.loader} size="large" />;
+    return renderFallback(strings.quiz.retry);
   }
 
-  if (error) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.error}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchQuestions}>
-          <Text style={styles.retryText}>{strings.quiz.retry}</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  if (!currentQuestion) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.error}>{strings.quiz.error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchQuestions}>
-          <Text style={styles.retryText}>{strings.quiz.retry}</Text>
-        </TouchableOpacity>
-      </View>
-    );
+  if (error || !currentQuestion) {
+    return renderFallback(error ?? strings.quiz.error);
   }
 
   const nextQuestion = (latestScore: number) => {
@@ -146,48 +149,78 @@ export default function QuizGameScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.scorecard}>
-        <Text style={styles.score}>{strings.quiz.score(score)}</Text>
-        <Text style={styles.highScore}>{strings.quiz.highScore(highScore)}</Text>
-      </View>
-      <Text style={styles.question}>{he.decode(currentQuestion.question)}</Text>
-      {shuffledAnswers.map(answer => (
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: getAnswerColor(answer) }]}
-          key={answer}
-          onPress={() => checkAnswer(answer)}
-        >
-          <Text style={styles.answer}>{he.decode(answer)}</Text>
-        </TouchableOpacity>
-      ))}
-      <TouchableOpacity style={styles.homeButton} onPress={() => navigation.navigate('Home')}>
-        <Text style={styles.homeButtonText}>{strings.common.backToMenu}</Text>
-      </TouchableOpacity>
-    </View>
+    <LinearGradient colors={colors.gradient} style={styles.gradient}>
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.panel}>
+          <View style={styles.scoreRow}>
+            <View style={styles.scorePill}>
+              <Text style={styles.scoreLabel}>Score</Text>
+              <Text style={styles.scoreValue}>{score}</Text>
+            </View>
+            <View style={styles.scorePill}>
+              <Text style={styles.scoreLabel}>Best</Text>
+              <Text style={styles.scoreValue}>{highScore}</Text>
+            </View>
+          </View>
+          <Text style={styles.question}>{he.decode(currentQuestion.question)}</Text>
+          {shuffledAnswers.map(answer => (
+            <TouchableOpacity
+              style={[styles.answerButton, { backgroundColor: getAnswerColor(answer) }]}
+              key={answer}
+              onPress={() => checkAnswer(answer)}
+            >
+              <Text style={styles.answerText}>{he.decode(answer)}</Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Home')}>
+            <Text style={styles.primaryText}>{strings.common.backToMenu}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { ...layout.centered, padding: 20 },
-  loader: { ...layout.centered },
-  centered: { ...layout.centered, padding: 20 },
-  question: { fontSize: 20, marginBottom: 20, textAlign: 'center' },
-  button: { padding: 15, width: '100%', marginVertical: 5, borderRadius: 10 },
-  answer: { fontSize: 16, color: colors.textLight, textAlign: 'center' },
-  homeButton: { position: 'absolute', bottom: 30, padding: 12 },
-  homeButtonText: { color: colors.textDark, fontSize: 16 },
-  scorecard: {
-    position: 'absolute',
-    top: 40,
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
+  gradient: { flex: 1 },
+  safe: { flex: 1, padding: 20 },
+  panel: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 28,
+    padding: 20,
+    ...surfaces.roundedCard,
+    borderWidth: 0,
   },
-  score: { fontSize: 18, fontWeight: 'bold' },
-  highScore: { fontSize: 18, fontWeight: 'bold' },
+  scoreRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 16,
+  },
+  scorePill: {
+    flex: 1,
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  scoreLabel: { color: colors.textMuted, fontSize: 12 },
+  scoreValue: { color: colors.textLight, fontWeight: '700', fontSize: 22 },
+  question: { fontSize: 20, marginBottom: 16, color: colors.textLight, lineHeight: 26 },
+  answerButton: {
+    paddingVertical: 14,
+    borderRadius: 14,
+    marginBottom: 10,
+    paddingHorizontal: 12,
+  },
+  answerText: { fontSize: 16, color: colors.textLight, textAlign: 'center' },
+  primaryButton: {
+    marginTop: 'auto',
+    paddingVertical: 14,
+    borderRadius: 18,
+    backgroundColor: colors.quizPrimary,
+    alignItems: 'center',
+  },
+  primaryText: { color: colors.textLight, fontWeight: '700' },
   error: { fontSize: 16, color: colors.quizIncorrect, marginBottom: 16, textAlign: 'center' },
-  retryButton: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.quizPrimary, borderRadius: 8 },
-  retryText: { color: colors.textLight, fontWeight: '600' },
 });
