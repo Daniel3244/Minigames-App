@@ -154,10 +154,11 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 28, fontWeight: '800', color: colors.textLight, marginBottom: 6 },
   subtitle: { color: colors.textMuted, textAlign: 'center', marginBottom: 20 },
-  metrics: { flexDirection: 'row', gap: 12, marginBottom: 30 },
+  metrics: { flexDirection: 'row', gap: 12, marginBottom: 30, width: '100%' },
   metricPill: {
     flex: 1,
     paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
